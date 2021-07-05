@@ -8,14 +8,25 @@ const router = express.Router();
 router.get('/posts', feedController.getPosts);
 router.post('/post', [
     body('title').trim().isLength({
-        min: 5  ,
+        min: 5,
         max: 20
     }),
     body("content").trim().isLength({
         min: 5,
         max: 300
     })
-],feedController.postPost);
+], feedController.postPost);
+
+router.put('/post/:postId', [
+    body('title').trim().isLength({
+        min: 5,
+        max: 20
+    }),
+    body("content").trim().isLength({
+        min: 5,
+        max: 300
+    })
+], feedController.editPost)
 
 router.get('/post/:postId', feedController.getPost);
 
