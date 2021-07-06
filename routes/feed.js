@@ -26,7 +26,9 @@ router.put('/post/:postId', [
         min: 5,
         max: 300
     })
-], feedController.editPost)
+], feedController.editPost);
+
+router.delete('/post/:postId', feedController.deletePost);
 
 router.get('/post/:postId', feedController.getPost);
 
