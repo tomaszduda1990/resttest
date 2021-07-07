@@ -37,8 +37,9 @@ app.use('/auth', authRoutes)
 
 app.use((error, req, res, next) => {
     console.log(error);
-    const {statusCode = 500, message = 'Unexpected server error'} = error;
-    res.status(statusCode).json({message})
+    const {statusCode = 500, message = 'Unexpected server error', data} = error;
+
+    res.status(statusCode).json({message, data, statusCode})
 })
 
 mongoose.connect(privData.mongo, {
