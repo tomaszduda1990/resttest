@@ -71,3 +71,48 @@ exports.postLogin = (req, res, next) => {
             next(err)
         })
 }
+
+exports.getStatus = (req, res, next) => {
+    User.findById(req.userId)
+        .then(usr => {
+            if(!usr){
+                const err = new Error('CANNOT FIND A USER')
+                err.statusCode = 404;
+                throw err;
+            }
+            res.status(200).json({
+                status: usr.status
+            })
+        })
+        .catch(err => {
+            if(!err.statusCode){
+                err.statusCode = 500;
+            }
+            next(err)
+        })
+}
+
+exports.patchStatus = (req, res, next) => {
+    const newStatus = req.body.status;
+    User.findById(req.userId)
+        .then(user => {
+            if(!user){
+                const err = new Error('CANNOT FIND A USER')
+                err.statusCode = 404;
+                throw err;
+            }
+            user.status = newStatus;
+            return user.save()
+        })
+        .then(result => {
+            res.status(200).json({
+                message: 'Status correctly set'
+            })
+        })
+        .catch(err => {
+            if(!err.statusCode){
+                err.statusCode = 500;
+            }
+            next(err)
+        })
+}

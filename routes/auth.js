@@ -3,6 +3,7 @@ const {body} = require('express-validator');
 const router = express.Router();
 const User = require('../models/user')
 const authController = require('../controllers/auth')
+const isAuth = require('../middleware/isAuth')
 router.put('/signup', [
     body('email').isEmail().withMessage('Please enter a valid email').custom((value, {req}) => {
         return User.findOne({email: value}).then(userObj => {
@@ -21,4 +22,8 @@ router.put('/signup', [
     })
 ], authController.signup)
 router.post('/login', body('email').normalizeEmail(), authController.postLogin);
+router.get('/status', isAuth, authController.getStatus);
+router.patch('/status', isAuth, [
+    body('status').trim().not().isEmpty()
+], authController.patchStatus);
 module.exports = router;
