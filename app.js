@@ -32,8 +32,8 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Headers', "Content-Type, Authorization");
     next()
 });
-app.use('/feed', feedRoutes)
-app.use('/auth', authRoutes)
+app.use('/feed', feedRoutes);
+app.use('/auth', authRoutes);
 
 app.use((error, req, res, next) => {
     console.log(error);
@@ -46,5 +46,9 @@ mongoose.connect(privData.mongo, {
     useUnifiedTopology: true,
     useNewUrlParser: true
 }).then(res => {
-    app.listen(8080);
+    const server = app.listen(8080);
+    const io = require('socket.io')(server);
+    io.on('connection', socket => {
+        console.log("Client connected", socket);
+    });
 }).catch(err => console.log(err))
