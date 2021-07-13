@@ -1,4 +1,5 @@
 const {validationResult} = require('express-validator');
+const io = require('../socket')
 const path = require('path');
 const fs = require('fs');
 const Post = require('../models/post');
@@ -8,7 +9,7 @@ exports.getPosts = async (req, res, next) => {
     const perPage = 2;
     try {
         const totalItems = await Post.find().countDocuments();
-        const posts = await Post.find().skip((currentPage - 1) * perPage).limit(perPage)
+        const posts = await Post.find().sort({createdAt: -1}).skip((currentPage - 1) * perPage).limit(perPage)
         res.status(200).json({
             posts,
             totalItems
@@ -52,6 +53,11 @@ exports.postPost = async (req, res, next) => {
         }
         user.posts.push(post);
         await user.save();
+        const socket = io.getIO();
+        socket.emit('posts', {
+            action:  "create",
+            post: {...post._doc, creator: {_id: req.userId, name: user.name} }
+        })
         res.status(201).json({
             message: "Post crested successfully",
             post: post,
@@ -104,14 +110,19 @@ exports.editPost = async (req, res, next) => {
         imageUrl = 'images/' + req.file.filename;
     }
     try {
-        const p = await Post.findById(postId)
+        const p = await Post.findById(postId).populate('creator');
         if (!p) {
             console.log('DISPLAY ERROR ON INVALID PRODUCT')
             const error = new Error('Cannot find post in the database');
             error.statusCode = 404;
             throw error;
         }
-        if (req.userId.toString() !== p.creator.toString()) {
+        console.log('ID COMPARISON')
+        console.log(p.creator._id)
+        console.log(req.userId)
+        console.log(req.userId.toString() === p.creator._id.toString())
+        console.log('ID COMPARISON')
+        if (req.userId.toString() !== p.creator._id.toString()) {
             const error = new Error('not authorized');
             if (!error.statusCode) {
                 error.statusCode = 403;
@@ -125,6 +136,14 @@ exports.editPost = async (req, res, next) => {
             clearImage(p.imageUrl);
         }
         const savedPost = await p.save();
+        const socket = io.getIO();
+        console.log('p.creator')
+        console.log(p.creator)
+        console.log("p.creator")
+        socket.emit('posts', {
+            action:  "edit",
+            post: {...p._doc, creator: {_id: req.userId, name: p.creator.name} }
+        })
         res.status(200).json({message: 'Succesfully updated post.', post: savedPost})
     } catch (err) {
         if (!err.statusCode) {
@@ -156,6 +175,11 @@ exports.deletePost = async (req, res, next) => {
         const user = await User.findById(req.userId);
         user.posts.pull(postId);
         await user.save();
+        const socket = io.getIO();
+        socket.emit('posts', {
+            action:  "delete",
+            post: postId
+        });
         res.status(200).json({message: 'deleted resource'})
     }catch (err) {
         if (!err.statusCode) {

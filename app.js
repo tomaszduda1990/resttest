@@ -1,7 +1,7 @@
 const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
-const multer = require('multer')
+const multer = require('multer');
 const privData = require('./priv/priv');
 const bodyParser = require("body-parser");
 const feedRoutes = require('./routes/feed');
@@ -47,8 +47,8 @@ mongoose.connect(privData.mongo, {
     useNewUrlParser: true
 }).then(res => {
     const server = app.listen(8080);
-    const io = require('socket.io')(server);
+    const io = require('./socket').init(server);
     io.on('connection', socket => {
-        console.log("Client connected", socket);
+        console.log("Client connected");
     });
 }).catch(err => console.log(err))
