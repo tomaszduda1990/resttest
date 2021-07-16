@@ -30,14 +30,32 @@ app.use(multer({storage: fileStorage, fileFilter}).single('image'))
 app.use('/images', express.static(path.join(__dirname, 'images')))
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', "*")
-    res.setHeader('Access-Control-Allow-Methods', "GET, PUT, POST, DELETE, PATCH");
+    res.setHeader('Access-Control-Allow-Methods', "GET, PUT, POST, DELETE, PATCH, OPTIONS");
     res.setHeader('Access-Control-Allow-Headers', "Content-Type, Authorization");
+    if(req.method === "OPTIONS"){
+        res.sendStatus(200)
+    }
     next()
 });
 
 app.use('/graphql', graphqlHTTP ({
     schema: graphqlSchema,
-    rootValue: graphqlResolver
+    rootValue: graphqlResolver,
+    graphiql: true,
+    formatError(err) {
+        if(!err.originalError){
+            return err;
+        }
+
+        const data = err.originalError.data
+        const message = err.message || "An error occured";
+        const code = err.code || 500;
+        return {
+            message,
+            data,
+            code
+        }
+    }
 }));
 
 
