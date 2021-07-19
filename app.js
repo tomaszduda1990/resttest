@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const multer = require('multer');
 const privData = require('./priv/priv');
 const bodyParser = require("body-parser");
+const auth = require('./middleware/auth')
 const app = express();
 
 
@@ -37,6 +38,8 @@ app.use((req, res, next) => {
     }
     next()
 });
+
+app.use(auth)
 
 app.use('/graphql', graphqlHTTP ({
     schema: graphqlSchema,
