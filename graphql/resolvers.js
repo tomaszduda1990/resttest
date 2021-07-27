@@ -119,12 +119,12 @@ module.exports = {
             error.code = 422;
             throw error;
         }
-        if(!page){
+        if (!page) {
             page = 1
         }
         const perPage = 2;
         const totalPosts = await Post.find().countDocuments()
-        const posts = await Post.find().skip((page - 1) * perPage ).limit(perPage).sort({createdAt: -1}).populate('creator')
+        const posts = await Post.find().skip((page - 1) * perPage).limit(perPage).sort({createdAt: -1}).populate('creator')
 
         return {
             posts: posts.map(post => ({
@@ -135,6 +135,74 @@ module.exports = {
             })),
             totalPosts
         }
-    }
+    },
 
+    post: async ({id}, req) => {
+        if (!req.isAuth) {
+            const error = new Error('not authenticated');
+            error.code = 422;
+            throw error;
+        }
+
+        const post = await Post.findById(id).populate('creator');
+        if(!post){
+            const error = new Error('post not find');
+            error.code = 404;
+            throw error;
+        }
+        return {
+            ...post._doc,
+            _id: post._id.toString(),
+            createdAt: post.createdAt.toISOString(),
+            updatedAt: post.updatedAt.toISOString()
+        }
+
+    },
+    updatePost: async ({id, postInput }, req) => {
+        if (!req.isAuth) {
+            const error = new Error('not authenticated');
+            error.code = 422;
+            throw error;
+        }
+        const post = await Post.findById(id).populate('creator')
+        if(!post){
+            const error = new Error('post not found');
+            error.code = 404;
+            throw error;
+        }
+        if(post.creator._id.toString() !== req.userId.toString()){
+            const error = new Error('user not allowed to edit post');
+            error.code = 403;
+            throw error;
+        }
+        const errors = [];
+        if (validator.isEmpty(postInput.title) || !validator.isLength(postInput.title, {min: 5, max: 20})) {
+            errors.push({message: "Title is invalid"})
+        }
+        if (validator.isEmpty(postInput.content) || !validator.isLength(postInput.content, {min: 5, max: 200})) {
+            errors.push({message: "Content length should be between 5-200 characters"})
+        }
+
+        if (errors.length > 0) {
+            const error = new Error("invalid input");
+            error.data = errors;
+            error.code = 422;
+            throw error
+        }
+
+        post.title = postInput.title;
+        post.content = postInput.content;
+        console.log(postInput)
+        if(postInput.imageUrl !== 'undefined'){
+            post.imageUrl = postInput.imageUrl
+        }
+        const updatedPost = await post.save();
+        return {
+            ...updatedPost._doc,
+            _id: updatedPost._id.toString(),
+            createdAt: updatedPost.createdAt.toISOString(),
+            updatedAt: updatedPost.updatedAt.toISOString()
+        }
+
+    }
 }
