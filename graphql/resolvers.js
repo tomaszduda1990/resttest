@@ -1,4 +1,6 @@
 const User = require('../models/user');
+const fs = require('fs')
+const path = require('path')
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
@@ -145,7 +147,7 @@ module.exports = {
         }
 
         const post = await Post.findById(id).populate('creator');
-        if(!post){
+        if (!post) {
             const error = new Error('post not find');
             error.code = 404;
             throw error;
@@ -158,19 +160,19 @@ module.exports = {
         }
 
     },
-    updatePost: async ({id, postInput }, req) => {
+    updatePost: async ({id, postInput}, req) => {
         if (!req.isAuth) {
             const error = new Error('not authenticated');
             error.code = 422;
             throw error;
         }
         const post = await Post.findById(id).populate('creator')
-        if(!post){
+        if (!post) {
             const error = new Error('post not found');
             error.code = 404;
             throw error;
         }
-        if(post.creator._id.toString() !== req.userId.toString()){
+        if (post.creator._id.toString() !== req.userId.toString()) {
             const error = new Error('user not allowed to edit post');
             error.code = 403;
             throw error;
@@ -193,7 +195,7 @@ module.exports = {
         post.title = postInput.title;
         post.content = postInput.content;
         console.log(postInput)
-        if(postInput.imageUrl !== 'undefined'){
+        if (postInput.imageUrl !== 'undefined') {
             post.imageUrl = postInput.imageUrl
         }
         const updatedPost = await post.save();
@@ -204,5 +206,73 @@ module.exports = {
             updatedAt: updatedPost.updatedAt.toISOString()
         }
 
+    },
+    deletePost: async ({id}, req) => {
+        if (!req.isAuth) {
+            const error = new Error('not authenticated');
+            error.code = 422;
+            throw error;
+        }
+        const post = await Post.findById(id)
+        if (!post) {
+            const error = new Error('post not found');
+            error.code = 404;
+            throw error;
+        }
+        console.log(req.userId.toString())
+        if (post.creator.toString() !== req.userId.toString()) {
+            const error = new Error('user not allowed to edit post');
+            error.code = 403;
+            throw error;
+        }
+        clearImage(post.imageUrl)
+        console.log(post)
+        await Post.findByIdAndRemove(id);
+        const user = await User.findById(req.userId)
+        console.log(user)
+        user.posts.pull(id)
+        await user.save();
+        return true
+    },
+    user: async (args, req) => {
+        if (!req.isAuth) {
+            const error = new Error('not authenticated');
+            error.code = 422;
+            throw error;
+        }
+        const user = await User.findById(req.userId);
+        if(!user){
+            throw new Error('cannot find user');
+        }
+        return {
+            ...user._doc,
+            id: user._id.toString()
+        }
+    },
+    updateStatus: async ({status}, req) => {
+        if (!req.isAuth) {
+            const error = new Error('not authenticated');
+            error.code = 422;
+            throw error;
+        }
+        const user = await User.findById(req.userId);
+        if(!user) {
+            throw new Error('user not found');
+        }
+        if(!status.trim()) {
+            throw new Error('please add correct status');
+        }
+        user.status = status;
+        await user.save()
+        return {
+            ...user._doc,
+            id: user._id.toString()
+        }
     }
 }
+
+const clearImage = imagePath => {
+    const filePath = path.join(__dirname, '..', imagePath);
+    fs.unlink(filePath, err => console.log(err))
+}
+
