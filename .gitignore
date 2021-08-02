@@ -2,3 +2,6 @@
 node_modules
 priv
 images
+access.log
+priv/priv.js
+nodemon.json

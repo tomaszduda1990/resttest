@@ -1,0 +1,7 @@
+{
+  "env": {
+    "MONGO_USER": "tduda",
+    "MONGO_PASSWORD": "4quila_Sucks",
+    "MONGO_DEFAULT_DB": "social"
+  }
+}

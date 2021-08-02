@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const compression = require('compression')
 const {graphqlHTTP } = require('express-graphql')
 const graphqlSchema = require('./graphql/schema')
 const graphqlResolver = require('./graphql/resolvers')
@@ -9,9 +10,13 @@ const multer = require('multer');
 const privData = require('./priv/priv');
 const bodyParser = require("body-parser");
 const auth = require('./middleware/auth')
+const helmet = require('helmet');
+const morgan = require('morgan');
 const app = express();
-
-
+const accessLog = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'})
+app.use(helmet())
+app.use(compression())
+app.use(morgan('combined', {stream: accessLog}))
 const fileStorage = multer.diskStorage({
     destination: 'images',
     filename: (req, file, cb) => {
@@ -87,7 +92,7 @@ mongoose.connect(privData.mongo, {
     useUnifiedTopology: true,
     useNewUrlParser: true
 }).then(res => {
-    app.listen(8080);
+    app.listen(process.env.PORT || 8080);
 }).catch(err => console.log(err))
 
 const clearImage = imagePath => {
